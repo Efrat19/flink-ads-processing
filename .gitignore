@@ -1,0 +1,5 @@
+output/*
+clusterID/*
+.DS_Store
+resources/kafka*
+flink-jobs/kotlin/*/target/*

@@ -1,0 +1,154 @@
+version: "3"
+services:
+  crawler:
+    image: flink-ads-processing/crawler
+    build:
+      context: crawler
+      dockerfile: Dockerfile
+    volumes:
+      - ./crawler-output:/tmp
+    environment:
+      SCRAPY_JSON_OUTPUT_PATH: '/tmp/ads.jsonl'
+      SCRAPY_KAFKA_HOSTS: 'broker:19092'
+      SCRAPY_KAFKA_ITEM_PIPELINE_TOPIC: 'scraped-ads2'
+    depends_on:
+      broker:
+        condition: service_healthy
+  kafka-gen:
+    image: confluentinc/cp-kafka:7.3.3
+    hostname: kafka-gen
+    container_name: kafka-gen
+    volumes:
+      - ./scripts/create_cluster_id.sh:/tmp/create_cluster_id.sh
+      - ./clusterID:/tmp/clusterID
+    command: "bash -c '/tmp/create_cluster_id.sh'"
+
+  broker:
+    image: confluentinc/cp-kafka:7.3.3
+    hostname: brkoer
+    container_name: broker
+    ports:
+      - "39092:39092"
+    healthcheck:
+      test: /usr/bin/kafka-topics --list  --bootstrap-server broker:19092 || exit 1
+      start_period: 30s
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    environment:
+      KAFKA_LISTENERS: BROKER://broker:19092,EXTERNAL://broker:39092,CONTROLLER://broker:9093
+      KAFKA_ADVERTISED_LISTENERS: BROKER://broker:19092,EXTERNAL://broker:39092
+      KAFKA_INTER_BROKER_LISTENER_NAME: BROKER
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,BROKER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_PROCESS_ROLES: 'controller,broker'
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@brkoer:9093'
+      KAFKA_METADATA_LOG_SEGMENT_MS: 15000
+      KAFKA_METADATA_MAX_RETENTION_MS: 1200000
+      KAFKA_METADATA_LOG_MAX_RECORD_BYTES_BETWEEN_SNAPSHOTS: 2800
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    volumes:
+      - brkoer-data:/var/lib/kafka/data
+      - ./scripts/update_run.sh:/tmp/update_run.sh
+      - ./clusterID:/tmp/clusterID
+    command: "bash -c '/tmp/update_run.sh && /etc/confluent/docker/run'"
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.3
+    container_name: schema-registry
+    platform: linux/amd64
+    restart: always
+    depends_on:
+      broker:
+        condition: service_healthy
+    healthcheck:
+      test: curl --output /dev/null --silent --head --fail http://schema-registry:8082/subjects
+      start_period: 2m
+      interval: 30s
+      timeout: 10s
+      retries: 10
+    ports:
+      - "8082:8082"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: broker:19092
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8082
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:7.5.3
+    hostname: control-center
+    container_name: control-center
+    ports:
+      - "9021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:19092'
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8082"
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      PORT: 9021
+    depends_on:
+      schema-registry:
+        condition: service_healthy
+  jobmanager:
+    image: flink:1.17-java11
+    container_name: jobmanager
+    # platform: linux/arm64/v8
+    hostname: jobmanager
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    restart: always
+    healthcheck:
+      test: curl http://localhost:8081/#/overview || exit 1
+      start_period: 10s
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    volumes:
+      - ./flink-jobmanager-data:/opt/flink/datasets
+      - ./flink-jobs:/opt/flink/jobs
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        jobmanager.memory.process.size: 2500m
+        jobstore.max-capacity: 8
+        jobstore.type: file
+  taskmanager:
+    image: flink:1.17-java11
+    container_name: taskmanager
+    # platform: linux/arm64/v8
+    command: taskmanager
+    restart: always
+    mem_limit: 6700m
+    mem_reservation: 6500m
+    cpus: 6
+    depends_on:
+      jobmanager:
+        condition: service_healthy
+    volumes:
+      - ./flink-taskmanager-data:/opt/flink/datasets
+      - ./flink-jobs:/opt/flink/jobs
+      - ./crawler-output:/tmp/crawler-output
+      - ./flink-job-output:/tmp/job-output
+    # scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 8
+        parallelism.default: 1
+        taskmanager.memory.process.size: 11500m
+        taskmanager.memory.flink.size: 10000m
+        taskmanager.memory.managed.size: 1500m
+        taskmanager.memory.task.heap.size: 1800m
+        taskmanager.memory.task.off-heap.size: 1000m
+        taskmanager.memory.framework.off-heap.size: 2700m
+        taskmanager.memory.framework.heap.size: 1800m
+        taskmanager.memory.jvm-metaspace.size: 1200m
+volumes:
+  brkoer-data:

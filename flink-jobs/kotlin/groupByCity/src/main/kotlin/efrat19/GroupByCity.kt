@@ -20,8 +20,8 @@ import org.apache.flink.table.api.Expressions.col
 import org.apache.flink.table.api.TableDescriptor;
 import org.apache.flink.streaming.connectors.kafka.table.KafkaDynamicTableFactory;
 
-const val IN_TOPIC = "scraped-ads2"
-const val OUT_TOPIC = "scraped-ads-gbc"
+const val IN_TOPIC = "scraped-ads"
+const val OUT_TOPIC = "ads-by-city-and-year-tmbl-win"
 const val K_HOST = "broker:19092"
 const val GROUP_ID = "flink-gbc-job"
 

@@ -25,7 +25,8 @@ https://github.com/katyagorshkova/kafka-kraft
 https://github.com/dfdeshom/scrapy-kafka
 https://github.com/valeriouberti/flink-with-kotlin
 https://stackoverflow.com/questions/41928803/how-to-parse-json-in-kotlin
-https://github.com/cbeust/klaxon
+https://github.com/hoptical/grafana-kafka-datasource
+
 
 readings:
 https://nightlies.apache.org/flink/flink-docs-master/docs/dev/datastream/operators/windows/
@@ -45,3 +46,26 @@ curl -X POST -H "Expect:" -F "jarfile=@/Users/efrat/Documents/flink-ads-processi
 curl -X GET http://localhost:8081/jars 
 
 curl -X POST http://localhost:8081/jars/138c6f4c-0e5b-49ad-a21d-677a8a696935_job-as-is-1.0-SNAPSHOT.jar/run      
+
+
+
+ui:
+1. table of cities and ads scraped -> sum of gbc tumbling windows
+table: sum(sum_over_time({topic="scraped-ads-gbc"} | unwrap num_ads | __error__=`` [1h])) by (city)
+
+2. grph showing ads scraped over the last minute, per city -> last of gbc sliding window
+ts: last_over_time({topic="scraped-ads-gbc"} | unwrap num_ads | __error__=`` [1h])) by (city)
+
+2. graph showing ads posted per year per city -> sum of tumbling windows of rolling group city and year of date posted
+bar chart: sum(sum_over_time({topic="scraped-ads-gbc"} | unwrap num_ads | __error__=`` [1h])) by (city,year)
+
+final result:
+this is a data pipeline where ads are collected, ingested and streamed to grafana for visualization
+1. Scrapy crawler scrapes real estate ads from a billboard website
+2. The ads are streamed to a kraft "scraped-ads" topic
+3. kotlin jobs are 
+
+1. add job windows
+2. add year agg
+2. dockerize submitter
+3. fix dashboard

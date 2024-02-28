@@ -13,7 +13,7 @@ import org.apache.flink.connector.kafka.source.KafkaSource
 import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 
-const val IN_TOPIC = "scraped-ads2"
+const val IN_TOPIC = "scraped-ads"
 const val OUT_TOPIC = "scraped-ads-as-is"
 const val K_HOST = "broker:19092"
 const val GROUP_ID = "flink-asis-job"

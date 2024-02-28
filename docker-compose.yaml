@@ -10,7 +10,7 @@ services:
     environment:
       SCRAPY_JSON_OUTPUT_PATH: '/tmp/ads.jsonl'
       SCRAPY_KAFKA_HOSTS: 'broker:19092'
-      SCRAPY_KAFKA_ITEM_PIPELINE_TOPIC: 'scraped-ads2'
+      SCRAPY_KAFKA_ITEM_PIPELINE_TOPIC: 'scraped-ads'
     depends_on:
       broker:
         condition: service_healthy
@@ -96,7 +96,6 @@ services:
   jobmanager:
     image: flink:1.17-java11
     container_name: jobmanager
-    # platform: linux/arm64/v8
     hostname: jobmanager
     ports:
       - "8081:8081"
@@ -121,7 +120,6 @@ services:
   taskmanager:
     image: flink:1.17-java11
     container_name: taskmanager
-    # platform: linux/arm64/v8
     command: taskmanager
     restart: always
     mem_limit: 6700m
@@ -150,5 +148,50 @@ services:
         taskmanager.memory.framework.off-heap.size: 2700m
         taskmanager.memory.framework.heap.size: 1800m
         taskmanager.memory.jvm-metaspace.size: 1200m
+  visualization:
+    image: grafana/grafana-enterprise
+    volumes:
+    - grafana-storage:/var/lib/grafana
+    - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    ports:
+    - 3000:3000
+    depends_on:
+      broker:
+        condition: service_healthy
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: viz-loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./visualization/loki.yaml/:/etc/loki/local-config.yml
+    depends_on:
+      - promtail
+
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: viz-promtail
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./visualization/promtail.yaml/:/etc/promtail/config.yml
+    depends_on:
+      broker:
+        condition: service_healthy
+
+  grafana:
+    environment:
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+    volumes:
+      - ./visualization/grafana-ds.yaml/:/etc/grafana/provisioning/datasources/ds.yaml
+    image: grafana/grafana:latest
+    container_name: viz-grafana
+    depends_on:
+      - loki
+    ports:
+      - "3000:3000"
+    
 volumes:
   brkoer-data:

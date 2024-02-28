@@ -65,7 +65,6 @@ this is a data pipeline where ads are collected, ingested and streamed to grafan
 2. The ads are streamed to a kraft "scraped-ads" topic
 3. kotlin jobs are 
 
-1. add job windows
-2. add year agg
+2. add year agg + tmbl
 2. dockerize submitter
 3. fix dashboard

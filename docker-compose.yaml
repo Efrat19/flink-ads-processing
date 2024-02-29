@@ -1,4 +1,4 @@
-version: "3"
+version: "3.8"
 services:
   crawler:
     image: flink-ads-processing/crawler
@@ -52,7 +52,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     volumes:
-      - brkoer-data:/var/lib/kafka/data
+      - brkoer-data1:/var/lib/kafka/data
       - ./scripts/update_run.sh:/tmp/update_run.sh
       - ./clusterID:/tmp/clusterID
     command: "bash -c '/tmp/update_run.sh && /etc/confluent/docker/run'"
@@ -134,7 +134,8 @@ services:
       - ./flink-jobs:/opt/flink/jobs
       - ./crawler-output:/tmp/crawler-output
       - ./flink-job-output:/tmp/job-output
-    # scale: 1
+    ports:
+    - 6122:6122
     environment:
       - |
         FLINK_PROPERTIES=
@@ -149,16 +150,14 @@ services:
         taskmanager.memory.framework.off-heap.size: 2700m
         taskmanager.memory.framework.heap.size: 1800m
         taskmanager.memory.jvm-metaspace.size: 1200m
-  visualization:
-    image: grafana/grafana-enterprise
-    volumes:
-    - grafana-storage:/var/lib/grafana
-    - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
-    ports:
-    - 3000:3000
-    depends_on:
-      broker:
-        condition: service_healthy
+  # flink-client:
+  #   image: flink:1.17-java11
+  #   container_name: client
+  #   volumes:
+  #     - ./flink-jobs:/tmp/flink-jobs
+  #     - ./scripts/submit-kotlin-job.sh:/usr/local/bin/submit-kotlin-job.sh
+
+
   loki:
     image: grafana/loki:2.9.4
     container_name: viz-loki
@@ -195,4 +194,4 @@ services:
       - "3000:3000"
     
 volumes:
-  brkoer-data:
+  brkoer-data1:

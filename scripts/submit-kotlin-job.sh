@@ -1,6 +1,6 @@
 JOB=$1
 cd flink-jobs/kotlin/$JOB
-mvn package -Dmaven.test.skip
+mvn package -Dmaven.test.skip -f $JOB-pom.xml
 cd ../../..
 JAR_PATH=$(pwd)/flink-jobs/kotlin/$JOB/target/$JOB-1.0-SNAPSHOT.jar
 echo "JAR_PATH: $JAR_PATH"

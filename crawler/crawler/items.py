@@ -9,6 +9,6 @@ import scrapy
 class AdItem(scrapy.Item):
     city = scrapy.Field()
     ad_id = scrapy.Field()
-    posted_time = scrapy.Field()
+    posted_date = scrapy.Field()
     scraped_time = scrapy.Field()
     pass

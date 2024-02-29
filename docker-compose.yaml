@@ -52,7 +52,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     volumes:
-      - brkoer-data3:/var/lib/kafka/data
+      - brkoer-data5:/var/lib/kafka/data
       - ./scripts/update_run.sh:/tmp/update_run.sh
       - ./clusterID:/tmp/clusterID
     command: "bash -c '/tmp/update_run.sh && /etc/confluent/docker/run'"
@@ -194,4 +194,4 @@ services:
       - "3000:3000"
     
 volumes:
-  brkoer-data3:
+ brkoer-data5:

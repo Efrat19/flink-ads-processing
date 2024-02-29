@@ -21,7 +21,7 @@ class AdcoilSpider(CrawlSpider):
             ad['ad_id'] = self.ad_id_from(response.url)
             ad['city'] = city
             ad['posted_date'] = self.posted_time_from(response.css(POSTED_TIME_SELECTOR).extract_first())
-            ad['scraped_time'] = str(datetime.datetime.now())
+            ad['scraped_time'] = str(datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             yield ad
             
     def is_ad(self, url):

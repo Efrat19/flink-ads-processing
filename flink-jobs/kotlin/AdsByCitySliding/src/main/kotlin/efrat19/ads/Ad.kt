@@ -23,6 +23,11 @@ data class Ad(
                 val city: String = "",
                 val ad_id: String,
                 val posted_date: String,
+                // @JsonFormat(
+                //         shape = JsonFormat.Shape.STRING,
+                //         pattern = "yyyy-MM-dd HH:mm:ss.SSSSSS", // '2024-02-29 19:37:12.491506'
+                //         )
+                // @Contextual
                 val scraped_time: String
 ) {
         constructor(

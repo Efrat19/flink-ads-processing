@@ -9,3 +9,5 @@ JAR_ID=$(curl -X POST -H "Expect:" -F "jarfile=@$JAR_PATH" http://localhost:8081
 echo "JAR_ID: $JAR_ID"
 
 curl -X POST http://localhost:8081/jars/$JAR_ID/run    
+
+open "http://localhost:8081/#/job/completed"

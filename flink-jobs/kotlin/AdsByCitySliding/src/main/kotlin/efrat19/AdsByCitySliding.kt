@@ -65,13 +65,13 @@ fun main() {
 
         val size = lit(Duration.ofSeconds(60))
         val slide = lit(Duration.ofSeconds(10))
-        // scrapedAdsTable.window(Slide.over(size).every(slide).on(col("ts")).`as`("w"))
-        scrapedAdsTable.groupBy(col("city"))
+        scrapedAdsTable.window(Slide.over(size).every(slide).on(col("ts")).`as`("w"))
+                        .groupBy(col("city"),col("w"))
                         .select(
                                         col("city"),
                                         col("ad_id").count(),
-                                        // col("w").start().`as`("w_start"),
-                                        // col("w").end().`as`("w_end")
+                                        col("w").start(),
+                                        col("w").end()
                                         )
                         .filter(col("city").isNotEqual(""))
                         .insertInto("sink")
@@ -103,7 +103,7 @@ fun main() {
 // }
 
 public fun createKafkaSinkDescriptor(): TableDescriptor.Builder {
-        return TableDescriptor.forConnector("upsert-kafka")
+        return TableDescriptor.forConnector("kafka")
                         .schema(
                                         Schema.newBuilder()
                                                         .column(
@@ -114,14 +114,14 @@ public fun createKafkaSinkDescriptor(): TableDescriptor.Builder {
                                                                         "num_ads",
                                                                         DataTypes.BIGINT().notNull()
                                                         )
-                                                        // .column("w_start",DataTypes.TIMESTAMP(3).notNull())
-                                                        // .column("w_end",
-                                                        // DataTypes.TIMESTAMP(3).notNull())
-                                                        .primaryKey("city")
+                                                        .column("w_start",DataTypes.TIMESTAMP_LTZ(3).notNull())
+                                                        .column("w_end",
+                                                        DataTypes.TIMESTAMP_LTZ(3).notNull())
+                                                        // .primaryKey("city")
                                                         .build()
                         )
-                        .option("key.format", "json")
-                        .option("value.format", "json")
+                        .format("json")
+                        // .option("value.format", "json")
                         .option("topic", SLIDING_OUT_TOPIC)
                         .option("properties.bootstrap.servers", K_HOST)
                         .option("properties.group.id", GROUP_ID)

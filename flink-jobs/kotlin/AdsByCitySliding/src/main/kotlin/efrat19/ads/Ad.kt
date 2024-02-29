@@ -23,8 +23,7 @@ data class Ad(
                 val city: String = "",
                 val ad_id: String,
                 val posted_date: String,
-                @Contextual
-                val scraped_time: Instant
+                val scraped_time: String
 ) {
         constructor(
                         adStr: String

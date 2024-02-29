@@ -15,12 +15,13 @@ class AdcoilSpider(CrawlSpider):
     def parse_item(self, response):
         CITY_SELECTOR = 'a.ps-2::attr(href)'
         POSTED_TIME_SELECTOR = 'div.px-3::text'
-        if self.is_ad(response.url):
+        city = self.city_from(response.css(CITY_SELECTOR).extract_first())
+        if self.is_ad(response.url) and city:
             ad = AdItem()
             ad['ad_id'] = self.ad_id_from(response.url)
-            ad['city'] = self.city_from(response.css(CITY_SELECTOR).extract_first())
+            ad['city'] = city
             ad['posted_date'] = self.posted_time_from(response.css(POSTED_TIME_SELECTOR).extract_first())
-            ad['scraped_time'] = datetime.datetime.now().timestamp()
+            ad['scraped_time'] = str(datetime.datetime.now())
             yield ad
             
     def is_ad(self, url):

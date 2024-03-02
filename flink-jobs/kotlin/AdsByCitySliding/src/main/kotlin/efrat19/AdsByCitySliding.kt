@@ -63,15 +63,10 @@ fun main() {
         val stream: DataStream<Ad> = env.fromSource(source, watermarks, "Kafka Source")
         val scrapedAdsTable = tableEnv.fromDataStream(stream, streamSchema)
 
-        val size = lit(Duration.ofSeconds(60))
-        val slide = lit(Duration.ofSeconds(10))
-        // scrapedAdsTable.window(Slide.over(size).every(slide).on(col("ts")).`as`("w"))
         scrapedAdsTable.groupBy(col("city"))
                         .select(
                                         col("city"),
                                         col("ad_id").count(),
-                                        // col("w").start().`as`("w_start"),
-                                        // col("w").end().`as`("w_end")
                                         )
                         .filter(col("city").isNotEqual(""))
                         .insertInto("sink")
@@ -79,28 +74,6 @@ fun main() {
 
         env.execute("scraped ads aggregation")
 }
-
-// public fun createKafkaSourceDescriptor(): TableDescriptor.Builder {
-//         return TableDescriptor.forConnector(KafkaDynamicTableFactory.IDENTIFIER)
-//                         .schema(
-//                                         Schema.newBuilder()
-//                                         .column("ad_id", DataTypes.STRING())
-//                                                         .column("city", DataTypes.STRING())
-//                                                         .column("posted_date", DataTypes.STRING())
-//                                                         .columnByExpression(
-//                                                                 "ts",
-//                                                                 "CAST(scraped_time AS TIMESTAMP(3))"
-//                                                                 ) // '2024-02-29 19:37:12.491506'
-//                                                         .watermark("ts", "ts - INTERVAL '5' SECOND")
-//                                                         .build()
-//                         )
-//                         .format("json")
-//                         .option("value.format", "json")
-//                         .option("topic", IN_TOPIC)
-//                         .option("properties.bootstrap.servers", K_HOST)
-//                         .option("properties.group.id", GROUP_ID)
-//                         .option("json.timestamp-format.standard", "ISO-8601")
-// }
 
 public fun createKafkaSinkDescriptor(): TableDescriptor.Builder {
         return TableDescriptor.forConnector("upsert-kafka")
@@ -114,9 +87,6 @@ public fun createKafkaSinkDescriptor(): TableDescriptor.Builder {
                                                                         "num_ads",
                                                                         DataTypes.BIGINT().notNull()
                                                         )
-                                                        // .column("w_start",DataTypes.TIMESTAMP(3).notNull())
-                                                        // .column("w_end",
-                                                        // DataTypes.TIMESTAMP(3).notNull())
                                                         .primaryKey("city")
                                                         .build()
                         )
@@ -128,17 +98,7 @@ public fun createKafkaSinkDescriptor(): TableDescriptor.Builder {
 }
 
 fun sqlTimeToEpochMilli(sqlTime: String): Long {
-        // val formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm:SS")
-        // val dateTime = LocalDateTime.parse(sqlTime, formatter)
-        // return dateTime.atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
         val dateFormat = SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
         val parsedDate = dateFormat.parse(sqlTime)
         return java.sql.Timestamp(parsedDate.getTime()).toInstant().toEpochMilli()
 }
-
-// fun sqlTimeToEpochMilli(sqlTime: String): Long {
-//         val formatter = DateTimeFormatter.ofPattern("YYYY-mm-dd HH:MM:SS")
-//         val dateTime = LocalDate.parse(sqlTime, formatter)
-//         return  dateTime.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
-//         // return dateTime.atZone(ZoneOffset.UTC).toInstant().toEpochMilli()
-// }

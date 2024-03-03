@@ -1,5 +1,5 @@
 # flink-ads-processing
-A project for practising flink and kotlin.
+A flink + kotlin exercise
 ## Explore
 Start the project 
 ```console

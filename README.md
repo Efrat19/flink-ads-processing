@@ -1,17 +1,23 @@
 # flink-ads-processing
 A little project for practising flink and kotlin.
-## Run
+## Explore
+ - Start the project 
 ```console
-# Start the project
 docker compose up
-
-# View jobs on the jobmanager
-open http://localhost:8081/#/job/running
-# Monitor incoming results on the dashboard
-open http://localhost:3000/d/fdf835b7-42d2-402a-93b0-3b048a1cfd41/flink-jobs-visualization?orgId=1&refresh=5s
-# Dig into raw msgs and topics on the control center (kafka ui)
-open http://localhost:3000/d/fdf835b7-42d2-402a-93b0-3b048a1cfd41/flink-jobs-visualization?orgId=1&refresh=5s
 ```
+this will take a while, go explore [flink windowing docs](https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/sql/queries/window-agg/) meanwhile.
+
+Once the stack is up, you can
+
+- View jobs on the jobmanager:
+        http://localhost:8081/#/job/running
+
+
+- Dig into raw msgs and topics on the control-center (kafka ui):
+        http://localhost:9021
+
+- Monitor incoming results on the dashboard:
+        http://localhost:3000/d/fdf835b7-42d2-402a-93b0-3b048a1cfd41/flink-jobs-visualization?orgId=1&refresh=5s
 <img src="resources/screenshot.png" width="1000"/>
 
 ## What's in here

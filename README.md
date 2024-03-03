@@ -1,7 +1,7 @@
 # flink-ads-processing
 A little project for practising flink and kotlin.
 
-## What do we have here
+## What's in here
 ```mermaid
 flowchart TB
         ws[Web Crawler] --> tsa>topic:\n scraped-ads]
@@ -12,6 +12,8 @@ flowchart TB
         abctw --- g[visualization stack]
         abcsw --- g
 ```
+<img src="resources/screenshot.png" width="2000"/>
+
 ### Stack Components:
 1. A **scrapy crawler** for collecting ads from a board website
 2. A **kraft deployment** - stores the raw scraped-ads topic, and the output topics from flink aggregation jobs.

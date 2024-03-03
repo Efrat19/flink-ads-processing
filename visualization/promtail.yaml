@@ -28,6 +28,7 @@ scrape_configs:
           expressions:
             city: city
             num_ads: num_ads
+            posted_year: posted_year
       - labels:
           city:
           num_ads:

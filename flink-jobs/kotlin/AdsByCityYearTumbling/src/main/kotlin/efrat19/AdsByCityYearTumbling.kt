@@ -19,9 +19,9 @@ import org.apache.flink.table.api.Tumble
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment
 
 const val TUMBLING_IN_TOPIC = "scraped-ads"
-const val TUMBLING_OUT_TOPIC = "ads-by-city-and-year-tmbl-win-6"
+const val TUMBLING_OUT_TOPIC = "ads-by-city-and-year-tmbl-win"
 const val TUMBLING_K_HOST = "broker:19092"
-const val TUMBLING_GROUP_ID = "flink-job1"
+const val TUMBLING_GROUP_ID = "ads-by-city-and-year-tmbl-win"
 
 fun main() {
         val env = StreamExecutionEnvironment.getExecutionEnvironment()

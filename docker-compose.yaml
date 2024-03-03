@@ -52,7 +52,6 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     volumes:
-      - brkoer-data6:/var/lib/kafka/data
       - ./scripts/update_run.sh:/tmp/update_run.sh
       - ./clusterID:/tmp/clusterID
     command: "bash -c '/tmp/update_run.sh && /etc/confluent/docker/run'"
@@ -101,15 +100,15 @@ services:
       - "8081:8081"
     command: jobmanager
     restart: always
+    depends_on:
+      broker:
+        condition: service_healthy
     healthcheck:
       test: curl http://localhost:8081/#/overview || exit 1
       start_period: 10s
       interval: 10s
       timeout: 3s
       retries: 3
-    volumes:
-      - ./flink-jobmanager-data:/opt/flink/datasets
-      - ./flink-jobs:/opt/flink/jobs
     environment:
       - |
         FLINK_PROPERTIES=
@@ -129,11 +128,6 @@ services:
       jobmanager:
         condition: service_healthy
         restart: true
-    volumes:
-      - ./flink-taskmanager-data:/opt/flink/datasets
-      - ./flink-jobs:/opt/flink/jobs
-      - ./crawler-output:/tmp/crawler-output
-      - ./flink-job-output:/tmp/job-output
     ports:
     - 6122:6122
     environment:
@@ -150,13 +144,31 @@ services:
         taskmanager.memory.framework.off-heap.size: 2700m
         taskmanager.memory.framework.heap.size: 1800m
         taskmanager.memory.jvm-metaspace.size: 1200m
-  # flink-client:
-  #   image: flink:1.17-java11
-  #   container_name: client
-  #   volumes:
-  #     - ./flink-jobs:/tmp/flink-jobs
-  #     - ./scripts/submit-kotlin-job.sh:/usr/local/bin/submit-kotlin-job.sh
 
+  flink-client-abcyt:
+    build: 
+      context: flink-jobs
+      dockerfile: client.Dockerfile
+      args:
+        JOB: AdsByCityYearTumbling
+    container_name: client-abcyt
+    depends_on:
+      jobmanager:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
+  flink-client-abcs:
+    build: 
+      context: flink-jobs
+      dockerfile: client.Dockerfile
+      args:
+        JOB: AdsByCitySliding
+    container_name: client-abcs
+    depends_on:
+      jobmanager:
+        condition: service_healthy
+      broker:
+        condition: service_healthy
 
   loki:
     image: grafana/loki:2.9.4
@@ -192,6 +204,3 @@ services:
       - loki
     ports:
       - "3000:3000"
-    
-volumes:
- brkoer-data6:

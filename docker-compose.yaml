@@ -197,7 +197,9 @@ services:
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
     volumes:
-      - ./visualization/grafana-ds.yaml/:/etc/grafana/provisioning/datasources/ds.yaml
+      - ./visualization/grafana-datasources.yaml/:/etc/grafana/provisioning/datasources/config.yaml
+      - ./visualization/grafana-dashboards.yaml/:/etc/grafana/provisioning/dashboards/config.yaml
+      - ./visualization/dashboard.json:/var/lib/grafana/dashboards/ads.json
     image: grafana/grafana:latest
     container_name: viz-grafana
     depends_on:

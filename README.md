@@ -1,5 +1,18 @@
 # flink-ads-processing
 A little project for practising flink and kotlin.
+## Run
+```console
+# Start the project
+docker compose up
+
+# View jobs on the jobmanager
+open http://localhost:8081/#/job/running
+# Monitor incoming results on the dashboard
+open http://localhost:3000/d/fdf835b7-42d2-402a-93b0-3b048a1cfd41/flink-jobs-visualization?orgId=1&refresh=5s
+# Dig into raw msgs and topics on the control center (kafka ui)
+open http://localhost:3000/d/fdf835b7-42d2-402a-93b0-3b048a1cfd41/flink-jobs-visualization?orgId=1&refresh=5s
+```
+<img src="resources/screenshot.png" width="1000"/>
 
 ## What's in here
 ```mermaid
@@ -12,8 +25,6 @@ flowchart TB
         abctw --- g[visualization stack]
         abcsw --- g
 ```
-<img src="resources/screenshot.png" width="2000"/>
-
 ### Stack Components:
 1. A **scrapy crawler** for collecting ads from a board website
 2. A **kraft deployment** - stores the raw scraped-ads topic, and the output topics from flink aggregation jobs.

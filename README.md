@@ -1,7 +1,7 @@
 # flink-ads-processing
 A little project for practising flink and kotlin.
 ## Explore
- - Start the project 
+Start the project 
 ```console
 docker compose up
 ```

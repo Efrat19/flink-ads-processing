@@ -1,93 +1,80 @@
 package efrat19
 
-import efrat19.ads.Ad
-import efrat19.ads.AdDeserializationSchema
-import java.sql.Timestamp
-import java.text.SimpleDateFormat
-import org.apache.flink.api.common.eventtime.WatermarkStrategy
-import org.apache.flink.connector.kafka.source.KafkaSource
-import org.apache.flink.streaming.api.datastream.DataStream
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
-import org.apache.flink.table.api.DataTypes
+import java.time.Duration
 import org.apache.flink.table.api.EnvironmentSettings
 import org.apache.flink.table.api.Expressions.col
-import org.apache.flink.table.api.Schema
-import org.apache.flink.table.api.TableDescriptor
-import org.apache.flink.table.api.bridge.java.StreamTableEnvironment
+import org.apache.flink.table.api.Expressions.lit
+import org.apache.flink.table.api.Slide
+import org.apache.flink.table.api.TableEnvironment
 
 const val SLIDING_IN_TOPIC = "scraped-ads"
-const val SLIDING_OUT_TOPIC = "ads-by-city-and-year-sld-win"
+const val SLIDING_OUT_TOPIC = "ads-by-city-sld-win-test3"
 const val SLIDING_K_HOST = "broker:19092"
 const val SLIDING_GROUP_ID = "flink-job1"
 
 fun main() {
-        val env = StreamExecutionEnvironment.getExecutionEnvironment()
-        val tableEnv = StreamTableEnvironment.create(env, EnvironmentSettings.inStreamingMode())
+        val settings = EnvironmentSettings.newInstance().inStreamingMode().build()
+        val tableEnv = TableEnvironment.create(settings)
+        val sourceDDL =
+                        "CREATE TABLE source (" +
+                                        "  ad_id STRING," + // AS JSON_VALUE('$', '$.ad_id') ," +
+                                        "  city STRING," + // AS JSON_VALUE('$', '$.city') ," +
+                                        "  posted_date STRING," + // AS JSON_VALUE('$',
+                                        // '$.posted_date') ," +
+                                        "  scraped_time STRING," + // AS JSON_VALUE('$',
+                                        // '$.scraped_time') " +
+                                        "  spider STRING," + // AS JSON_VALUE('$', '$.scraped_time')
+                                        // " +
+                                        "  `ts` AS to_timestamp(scraped_time)," +
+                                        "  WATERMARK FOR `ts` AS `ts` - INTERVAL '5' SECOND" +
+                                        ") WITH (" +
+                                        "  'connector' = 'kafka'," +
+                                        "  'topic' = 'scraped-ads'," +
+                                        "  'properties.bootstrap.servers' = 'broker:19092'," +
+                                        "  'scan.startup.mode' = 'earliest-offset'," +
+                                        "  'format' = 'json'," +
+                                        // "  'json.fail-on-missing-field' = 'false'," +
+                                        "  'json.encode.decimal-as-plain-number' = 'false'," +
+                                        "  'json.ignore-parse-errors' = 'true'" +
+                                        // "  'value.fields-include' = 'ALL'" +
+                                        ")"
+        val sinkDDL =
+                        "CREATE TABLE sink (" +
+                                        "  city STRING NOT NULL," +
+                                        "  num_ads BIGINT," +
+                                        "  window_start TIMESTAMP_LTZ(3)," +
+                                        "  window_end TIMESTAMP_LTZ(3)," +
+                                        "  PRIMARY KEY (city) NOT ENFORCED" +
+                                        ") WITH (" +
+                                        "  'connector' = 'upsert-kafka'," +
+                                        "  'topic' = 'ads-by-city-sld-win-test3'," +
+                                        "  'properties.bootstrap.servers' = 'broker:19092'," +
+                                        "  'value.format' = 'json'," +
+                                        "  'key.format' = 'json'" +
+                                        ")"
+        val aggDDL = "INSERT INTO sink " +
+                                        "SELECT `city`, COUNT(ad_id) AS num_ads, window_start, window_end " +
+                                        "FROM TABLE(HOP(TABLE source, DESCRIPTOR(ts), INTERVAL '10' SECONDS, INTERVAL '60' SECONDS)) " +
+                                        "WHERE `city` <> 'null' " +
+                                        "GROUP BY `city`, window_start, window_end"
+        tableEnv.executeSql(sourceDDL)
+        tableEnv.executeSql(sinkDDL)
 
-        tableEnv.createTable("sink", createKafkaSinkDescriptor().build())
-        val source: KafkaSource<Ad> =
-                        KafkaSource.builder<Ad>()
-                                        .setBootstrapServers(SLIDING_K_HOST)
-                                        .setTopics(SLIDING_IN_TOPIC)
-                                        .setGroupId(SLIDING_GROUP_ID)
-                                        .setValueOnlyDeserializer(AdDeserializationSchema())
-                                        .build()
-        val watermarks =
-                        WatermarkStrategy.forMonotonousTimestamps<Ad>().withTimestampAssigner {
-                                        ad,
-                                        recordTimestamp ->
-                                sqlTimeToEpochMilli(ad.scraped_time)
-                        }
-        val streamSchema =
-                        Schema.newBuilder()
-                                        .column("city", DataTypes.STRING())
-                                        .column("ad_id", DataTypes.STRING())
-                                        .column("posted_date", DataTypes.STRING())
-                                        .columnByExpression(
-                                                        "ts",
-                                                        "CAST(scraped_time AS TIMESTAMP(3))"
-                                        )
-                                        .watermark("ts", "ts - INTERVAL '5' SECOND")
-                                        .build()
-        val stream: DataStream<Ad> = env.fromSource(source, watermarks, "Kafka Source")
-        val scrapedAdsTable = tableEnv.fromDataStream(stream, streamSchema)
+        // var scrapedAdsTable = tableEnv.sqlQuery("SELECT * FROM source")
+        // val size = lit(Duration.ofSeconds(60))
+        // val slide = lit(Duration.ofSeconds(10))
+        // scrapedAdsTable.window(Slide.over(size).every(slide).on(col("ts")).`as`("w"))
+        //                 .groupBy(col("city"), col("w"))
+        //                 .select(
+        //                                 col("city"),
+        //                                 col("ad_id").count(),
+        //                                 col("w").end(),
+        //                                 col("w").start(),
+        //                 )
+        //                 .filter(col("city").isNotEqual("null"))
+        //                 .insertInto("sink")
+        //                 .execute()
+        //                 .print()
 
-        scrapedAdsTable.groupBy(col("city"))
-                        .select(
-                                        col("city"),
-                                        col("ad_id").count(),
-                        )
-                        .filter(col("city").isNotEqual(""))
-                        .insertInto("sink")
-                        .execute()
-
-        env.execute("scraped ads aggregation")
-}
-
-public fun createKafkaSinkDescriptor(): TableDescriptor.Builder {
-        return TableDescriptor.forConnector("upsert-kafka")
-                        .schema(
-                                        Schema.newBuilder()
-                                                        .column(
-                                                                        "city",
-                                                                        DataTypes.STRING().notNull()
-                                                        )
-                                                        .column(
-                                                                        "num_ads",
-                                                                        DataTypes.BIGINT().notNull()
-                                                        )
-                                                        .primaryKey("city")
-                                                        .build()
-                        )
-                        .option("key.format", "json")
-                        .option("value.format", "json")
-                        .option("topic", SLIDING_OUT_TOPIC)
-                        .option("properties.bootstrap.servers", SLIDING_K_HOST)
-                        .option("properties.group.id", SLIDING_GROUP_ID)
-}
-
-fun sqlTimeToEpochMilli(sqlTime: String): Long {
-        val dateFormat = SimpleDateFormat("yyyy-MM-dd hh:mm:ss")
-        val parsedDate = dateFormat.parse(sqlTime)
-        return java.sql.Timestamp(parsedDate.getTime()).toInstant().toEpochMilli()
+        tableEnv.executeSql(aggDDL)
 }

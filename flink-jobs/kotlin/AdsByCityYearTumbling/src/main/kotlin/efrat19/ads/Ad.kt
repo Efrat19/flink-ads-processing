@@ -9,6 +9,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.*
 import org.apache.flink.api.common.typeinfo.TypeInfo
 import org.apache.flink.table.api.DataTypes
+// import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 public fun AdFactory(s: String): Ad =
                 Json {
@@ -19,21 +20,16 @@ public fun AdFactory(s: String): Ad =
 
 @Serializable
 @TypeInfo(DataClassTypeInfoFactory::class)
+// @JsonIgnoreProperties(ignoreUnknown = true)
 data class Ad(
                 val city: String = "",
-                val ad_id: String,
-                val posted_date: String,
-                val scraped_time: String,
+                val ad_id: String = "",
+                val posted_date: String = "",
+                val scraped_time: String = "",
+                val spider: String = "",
                 var posted_year: String = "",
 ) {
-        constructor(
-                        adStr: String
-        ) : this(
-                        AdFactory(adStr).city,
-                        AdFactory(adStr).ad_id,
-                        AdFactory(adStr).posted_date,
-                        AdFactory(adStr).scraped_time
-        )
+        constructor() : this("","","","")
 
         public fun withPostedYear() : Ad {
                 this.posted_year = extractYearFrom(this.posted_date)

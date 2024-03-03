@@ -27,8 +27,6 @@ class KafkaPipeline(object):
         self.producer = producer
         self.topic = topic
 
-        self.encoder = ScrapyJSONEncoder()
-
     def process_item(self, item, spider):
     #     return deferToThread(self._process_item, item, spider)
 
@@ -45,8 +43,7 @@ class KafkaPipeline(object):
         # put spider name in item
         item = dict(item)
         item['spider'] = spider.name
-        msg = self.encoder.encode(item)
-        self.producer.send(self.topic, msg)
+        self.producer.send(self.topic, item)
 
     def close_spider(self, spider):
         self.producer.close()

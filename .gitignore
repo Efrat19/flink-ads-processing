@@ -3,3 +3,5 @@ clusterID/*
 .DS_Store
 resources/kafka*
 */kotlin/*/target/*
+flink-checkpoints/
+crawler-output/

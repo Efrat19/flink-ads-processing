@@ -116,6 +116,17 @@ services:
         jobmanager.memory.process.size: 2500m
         jobstore.max-capacity: 8
         jobstore.type: file
+        execution.checkpointing.interval: 100
+        execution.checkpointing.min-pause: 500
+        execution.checkpointing.tolerable-failed-checkpoints: 2 
+        execution.checkpointing.timeout: 60000
+        execution.checkpointing.unaligned.enabled: true
+        execution.checkpointing.externalized-checkpoint-retention: DELETE_ON_CANCELLATION
+        state.checkpoint-storage: filesystem
+        state.checkpoints.dir: file:///opt/flink/checkpoints
+        state.checkpoints.num-retained: 10
+    volumes:
+      - ./flink-checkpoints:/opt/flink/checkpoints
   taskmanager:
     image: flink:1.17-java11
     container_name: taskmanager
@@ -144,6 +155,8 @@ services:
         taskmanager.memory.framework.off-heap.size: 2700m
         taskmanager.memory.framework.heap.size: 1800m
         taskmanager.memory.jvm-metaspace.size: 1200m
+    volumes:
+      - ./flink-checkpoints:/opt/flink/checkpoints
 
   flink-client-abcyt:
     build: 
